@@ -1,0 +1,1386 @@
+openapi: 3.0.3
+info:
+  title: PulseControlERP API
+  description: Multi-tenant ERP system for garment manufacturing and supply chain management
+  version: 1.0.0
+  contact:
+    name: PulseControlERP Support
+
+servers:
+  - url: https://api.pulsecontroleRP.com/v1
+    description: Production
+  - url: http://localhost:3000/v1
+    description: Local development
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/login endpoint
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyId:
+          type: integer
+          format: int64
+          nullable: true
+        roleCode:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        isActive:
+          type: boolean
+
+    Company:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+        name:
+          type: string
+        isActive:
+          type: boolean
+
+    MasterOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyId:
+          type: integer
+          format: int64
+        internalOrderNo:
+          type: string
+        buyerOrderNo:
+          type: string
+        buyerName:
+          type: string
+        styleNo:
+          type: string
+        orderQty:
+          type: number
+        pcdDate:
+          type: string
+          format: date
+        bpcdDate:
+          type: string
+          format: date
+
+    SubPO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyId:
+          type: integer
+          format: int64
+        masterOrderId:
+          type: integer
+          format: int64
+        subPoNo:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, SUBMITTED, APPROVED, REJECTED]
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubPOItem'
+
+    SubPOItem:
+      type: object
+      properties:
+        itemId:
+          type: integer
+          format: int64
+        itemName:
+          type: string
+        orderedQty:
+          type: number
+        unitPrice:
+          type: number
+
+    LinePlan:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        masterOrderId:
+          type: integer
+          format: int64
+        unitId:
+          type: integer
+          format: int64
+        productionLineId:
+          type: integer
+          format: int64
+        plannedQty:
+          type: number
+        planDate:
+          type: string
+          format: date
+
+    GRN:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        grnNo:
+          type: string
+        subPoId:
+          type: integer
+          format: int64
+          nullable: true
+        generalGoodsPoId:
+          type: integer
+          format: int64
+          nullable: true
+        receivedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              itemId:
+                type: integer
+                format: int64
+              receivedQty:
+                type: number
+
+    Requisition:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        reqNo:
+          type: string
+        department:
+          type: string
+          enum: [CUTTING, SEWING, FINISHING]
+        masterOrderId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [SUBMITTED, APPROVED, ISSUED, PARTIAL_ISSUED, CLOSED, REJECTED]
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              itemId:
+                type: integer
+                format: int64
+              requestedQty:
+                type: number
+              issuedQty:
+                type: number
+
+    CuttingBatch:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        batchNo:
+          type: string
+        masterOrderId:
+          type: integer
+          format: int64
+        unitId:
+          type: integer
+          format: int64
+        productionLineId:
+          type: integer
+          format: int64
+        cutQty:
+          type: number
+        panelReplacementQty:
+          type: number
+        cutDate:
+          type: string
+          format: date
+
+    BundleCard:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        bundleBarcode:
+          type: string
+        cuttingBatchId:
+          type: integer
+          format: int64
+        bundleQty:
+          type: number
+        issuedToSewingQty:
+          type: number
+
+    SewingDeclaration:
+      type: object
+      properties:
+        bundleCardId:
+          type: integer
+          format: int64
+        okQty:
+          type: number
+        rejectQty:
+          type: number
+        repairQty:
+          type: number
+        dhuPercent:
+          type: number
+        isWashRequired:
+          type: boolean
+
+    FinishingLog:
+      type: object
+      properties:
+        masterOrderId:
+          type: integer
+          format: int64
+        logHour:
+          type: string
+          format: date-time
+        ironQty:
+          type: number
+        qcPassQty:
+          type: number
+        repairQty:
+          type: number
+        rejectQty:
+          type: number
+        metalPassQty:
+          type: number
+
+    Carton:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        cartonNo:
+          type: string
+        masterOrderId:
+          type: integer
+          format: int64
+        assortmentType:
+          type: string
+        cartonQty:
+          type: number
+
+    Shipment:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        shipmentNo:
+          type: string
+        masterOrderId:
+          type: integer
+          format: int64
+        status:
+          type: string
+        cartons:
+          type: array
+          items:
+            type: object
+            properties:
+              cartonId:
+                type: integer
+                format: int64
+              inspectionStatus:
+                type: string
+                enum: [PENDING, PASS, FAIL]
+              inspectionRemarks:
+                type: string
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ==================== Authentication ====================
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: User logout
+      responses:
+        '204':
+          description: Logout successful
+
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get current user profile
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  # ==================== System Admin - Companies ====================
+  /companies:
+    get:
+      tags: [System Admin]
+      summary: List all companies (System Admin only)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Companies list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Company'
+                  total:
+                    type: integer
+
+    post:
+      tags: [System Admin]
+      summary: Create new company (System Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name]
+              properties:
+                code:
+                  type: string
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Company created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+
+  /companies/{id}:
+    get:
+      tags: [System Admin]
+      summary: Get company details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Company details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+
+  # ==================== Users ====================
+  /users:
+    get:
+      tags: [Users]
+      summary: List users (filtered by company for non-admin)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Users list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+
+    post:
+      tags: [Users]
+      summary: Create new user (Company Admin or System Admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password, fullName, roleId]
+              properties:
+                companyId:
+                  type: integer
+                  format: int64
+                username:
+                  type: string
+                password:
+                  type: string
+                email:
+                  type: string
+                fullName:
+                  type: string
+                roleId:
+                  type: integer
+                  format: int64
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  # ==================== Master Orders ====================
+  /orders:
+    get:
+      tags: [Merchandising]
+      summary: List master orders
+      parameters:
+        - name: buyerOrderNo
+          in: query
+          schema:
+            type: string
+        - name: internalOrderNo
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Orders list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MasterOrder'
+
+    post:
+      tags: [Merchandising]
+      summary: Create master order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [internalOrderNo, buyerOrderNo, buyerName, orderQty]
+              properties:
+                internalOrderNo:
+                  type: string
+                buyerOrderNo:
+                  type: string
+                buyerName:
+                  type: string
+                styleNo:
+                  type: string
+                orderQty:
+                  type: number
+                pcdDate:
+                  type: string
+                  format: date
+                bpcdDate:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterOrder'
+
+  /orders/{id}:
+    get:
+      tags: [Merchandising]
+      summary: Get order details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterOrder'
+
+  # ==================== Sub-PO ====================
+  /sub-pos:
+    get:
+      tags: [Merchandising]
+      summary: List sub-POs
+      parameters:
+        - name: masterOrderId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sub-PO list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubPO'
+
+    post:
+      tags: [Merchandising]
+      summary: Create sub-PO
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [masterOrderId, subPoNo, items]
+              properties:
+                masterOrderId:
+                  type: integer
+                  format: int64
+                subPoNo:
+                  type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      itemId:
+                        type: integer
+                        format: int64
+                      orderedQty:
+                        type: number
+                      unitPrice:
+                        type: number
+      responses:
+        '201':
+          description: Sub-PO created
+
+  /sub-pos/{id}/submit:
+    post:
+      tags: [Merchandising]
+      summary: Submit sub-PO for approval
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Sub-PO submitted
+
+  /sub-pos/{id}/approve:
+    post:
+      tags: [Approval]
+      summary: Approve sub-PO (Management only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Sub-PO approved
+
+  /sub-pos/{id}/reject:
+    post:
+      tags: [Approval]
+      summary: Reject sub-PO
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Sub-PO rejected
+
+  # ==================== Material Transfer ====================
+  /material-transfer:
+    post:
+      tags: [Merchandising]
+      summary: Transfer raw material between orders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [itemId, qty, fromOrderId, toOrderId]
+              properties:
+                itemId:
+                  type: integer
+                  format: int64
+                qty:
+                  type: number
+                fromOrderId:
+                  type: integer
+                  format: int64
+                toOrderId:
+                  type: integer
+                  format: int64
+                remarks:
+                  type: string
+      responses:
+        '201':
+          description: Transfer completed and notification generated
+
+  # ==================== Planning ====================
+  /line-plans:
+    get:
+      tags: [Planning]
+      summary: List line plans
+      parameters:
+        - name: masterOrderId
+          in: query
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Line plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LinePlan'
+
+    post:
+      tags: [Planning]
+      summary: Create line plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [masterOrderId, unitId, productionLineId, plannedQty, planDate]
+              properties:
+                masterOrderId:
+                  type: integer
+                  format: int64
+                unitId:
+                  type: integer
+                  format: int64
+                productionLineId:
+                  type: integer
+                  format: int64
+                plannedQty:
+                  type: number
+                planDate:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Line plan created
+
+  /line-plans/{id}/reallocate:
+    post:
+      tags: [Planning]
+      summary: Reallocate quantity to different line (generates notification)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newProductionLineId:
+                  type: integer
+                  format: int64
+                newPlannedQty:
+                  type: number
+      responses:
+        '200':
+          description: Reallocation completed
+
+  # ==================== GRN ====================
+  /grn:
+    get:
+      tags: [GRN]
+      summary: List GRNs
+      responses:
+        '200':
+          description: GRN list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GRN'
+
+    post:
+      tags: [GRN]
+      summary: Create GRN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [grnNo, receivedAt, items]
+              properties:
+                grnNo:
+                  type: string
+                subPoId:
+                  type: integer
+                  format: int64
+                generalGoodsPoId:
+                  type: integer
+                  format: int64
+                receivedAt:
+                  type: string
+                  format: date-time
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      itemId:
+                        type: integer
+                        format: int64
+                      receivedQty:
+                        type: number
+      responses:
+        '201':
+          description: GRN created
+
+  # ==================== Store Inventory ====================
+  /inventory/balance:
+    get:
+      tags: [Store]
+      summary: Get inventory balance
+      parameters:
+        - name: masterOrderId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: itemId
+          in: query
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Inventory balances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    itemId:
+                      type: integer
+                      format: int64
+                    itemName:
+                      type: string
+                    masterOrderId:
+                      type: integer
+                      format: int64
+                    onHandQty:
+                      type: number
+                    reservedQty:
+                      type: number
+
+  # ==================== Requisitions ====================
+  /requisitions:
+    get:
+      tags: [Store]
+      summary: List requisitions
+      parameters:
+        - name: department
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Requisitions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Requisition'
+
+    post:
+      tags: [Cutting, Sewing, Finishing]
+      summary: Create requisition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reqNo, department, masterOrderId, items]
+              properties:
+                reqNo:
+                  type: string
+                department:
+                  type: string
+                  enum: [CUTTING, SEWING, FINISHING]
+                masterOrderId:
+                  type: integer
+                  format: int64
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      itemId:
+                        type: integer
+                        format: int64
+                      requestedQty:
+                        type: number
+      responses:
+        '201':
+          description: Requisition created
+
+  /requisitions/{id}/issue:
+    post:
+      tags: [Store]
+      summary: Issue items against requisition
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      itemId:
+                        type: integer
+                        format: int64
+                      issuedQty:
+                        type: number
+      responses:
+        '200':
+          description: Items issued
+
+  # ==================== QA ====================
+  /qa/fabric-inspection:
+    post:
+      tags: [Store QA]
+      summary: Create fabric QA report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [masterOrderId, rollNo, qaStatus]
+              properties:
+                masterOrderId:
+                  type: integer
+                  format: int64
+                grnItemId:
+                  type: integer
+                  format: int64
+                rollNo:
+                  type: string
+                colorShade:
+                  type: string
+                shrinkagePercent:
+                  type: number
+                patternGroup:
+                  type: string
+                qaStatus:
+                  type: string
+                  enum: [PASS, FAIL]
+      responses:
+        '201':
+          description: Fabric QA report created
+
+  /qa/accessories-inspection:
+    post:
+      tags: [Store QA]
+      summary: Create accessories QA report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [masterOrderId, itemId, qaStatus]
+              properties:
+                masterOrderId:
+                  type: integer
+                  format: int64
+                itemId:
+                  type: integer
+                  format: int64
+                qaStatus:
+                  type: string
+                  enum: [PASS, FAIL]
+                failReason:
+                  type: string
+      responses:
+        '201':
+          description: Accessories QA report created
+
+  # ==================== Cutting ====================
+  /cutting/batches:
+    get:
+      tags: [Cutting]
+      summary: List cutting batches
+      responses:
+        '200':
+          description: Cutting batches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CuttingBatch'
+
+    post:
+      tags: [Cutting]
+      summary: Create cutting batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [batchNo, masterOrderId, unitId, productionLineId, cutQty, cutDate]
+              properties:
+                batchNo:
+                  type: string
+                masterOrderId:
+                  type: integer
+                  format: int64
+                unitId:
+                  type: integer
+                  format: int64
+                productionLineId:
+                  type: integer
+                  format: int64
+                cutQty:
+                  type: number
+                panelReplacementQty:
+                  type: number
+                cutDate:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Cutting batch created
+
+  /cutting/bundles:
+    post:
+      tags: [Cutting]
+      summary: Generate bundle cards
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cuttingBatchId, bundles]
+              properties:
+                cuttingBatchId:
+                  type: integer
+                  format: int64
+                bundles:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      bundleBarcode:
+                        type: string
+                      bundleQty:
+                        type: number
+      responses:
+        '201':
+          description: Bundle cards created
+
+  # ==================== Sewing ====================
+  /sewing/declarations:
+    post:
+      tags: [Sewing]
+      summary: Declare sewing output for bundle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SewingDeclaration'
+      responses:
+        '201':
+          description: Sewing declaration recorded
+
+  # ==================== Washing ====================
+  /washing/transactions:
+    post:
+      tags: [Washing]
+      summary: Record washing input/output
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [masterOrderId, inputQty, outputQty, txnDate]
+              properties:
+                masterOrderId:
+                  type: integer
+                  format: int64
+                inputQty:
+                  type: number
+                outputQty:
+                  type: number
+                txnDate:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Washing transaction recorded
+
+  # ==================== Finishing ====================
+  /finishing/logs:
+    post:
+      tags: [Finishing]
+      summary: Record hourly finishing data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinishingLog'
+      responses:
+        '201':
+          description: Finishing log recorded
+
+  # ==================== Packing ====================
+  /packing/cartons:
+    post:
+      tags: [Packing]
+      summary: Create carton
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cartonNo, masterOrderId, assortmentType, cartonQty]
+              properties:
+                cartonNo:
+                  type: string
+                masterOrderId:
+                  type: integer
+                  format: int64
+                assortmentType:
+                  type: string
+                cartonQty:
+                  type: number
+      responses:
+        '201':
+          description: Carton created
+
+  # ==================== Shipment ====================
+  /shipments:
+    get:
+      tags: [Shipment]
+      summary: List shipments
+      responses:
+        '200':
+          description: Shipments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Shipment'
+
+    post:
+      tags: [Shipment]
+      summary: Create shipment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shipmentNo, masterOrderId, cartonIds]
+              properties:
+                shipmentNo:
+                  type: string
+                masterOrderId:
+                  type: integer
+                  format: int64
+                cartonIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+      responses:
+        '201':
+          description: Shipment created
+
+  /shipments/{id}/inspect-carton:
+    post:
+      tags: [Shipment]
+      summary: Update carton inspection result
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cartonId, inspectionStatus]
+              properties:
+                cartonId:
+                  type: integer
+                  format: int64
+                inspectionStatus:
+                  type: string
+                  enum: [PASS, FAIL]
+                inspectionRemarks:
+                  type: string
+      responses:
+        '200':
+          description: Inspection recorded
+
+  # ==================== Commercial ====================
+  /commercial/costs:
+    post:
+      tags: [Commercial]
+      summary: Add commercial cost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [masterOrderId, costHead, amount]
+              properties:
+                masterOrderId:
+                  type: integer
+                  format: int64
+                shipmentId:
+                  type: integer
+                  format: int64
+                costHead:
+                  type: string
+                amount:
+                  type: number
+                remarks:
+                  type: string
+      responses:
+        '201':
+          description: Cost recorded
+
+  /commercial/profit-analysis/{masterOrderId}:
+    get:
+      tags: [Commercial]
+      summary: Get profit analysis for order
+      parameters:
+        - name: masterOrderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Profit analysis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  masterOrderId:
+                    type: integer
+                    format: int64
+                  totalRevenue:
+                    type: number
+                  totalCost:
+                    type: number
+                  profit:
+                    type: number
+                  profitMargin:
+                    type: number
+
+  # ==================== Notifications ====================
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Get user notifications
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      format: int64
+                    eventType:
+                      type: string
+                    message:
+                      type: string
+                    createdAt:
+                      type: string
+                      format: date-time

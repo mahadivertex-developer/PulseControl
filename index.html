@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PulseControlERP - Multi-Company ERP Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            z-index: 1000;
+            padding: 0 40px;
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+        }
+        
+        .logo {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #2563eb;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 35px;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #4b5563;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: #2563eb;
+        }
+        
+        .nav-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .nav-login {
+            background: transparent;
+            color: #2563eb;
+            padding: 10px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            border: 2px solid #2563eb;
+        }
+        
+        .nav-login:hover {
+            background: #2563eb;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .nav-cta {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+        }
+        
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(to bottom, #f8fafc 0%, #e0e7ff 100%);
+            padding: 120px 40px 80px;
+            text-align: center;
+        }
+        
+        .hero-content {
+            max-width: 900px;
+        }
+        
+        .hero h1 {
+            font-size: 4.5em;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 30px;
+            color: #1a1a1a;
+            letter-spacing: -0.02em;
+        }
+        
+        .hero .gradient-text {
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: block;
+        }
+        
+        .hero p {
+            font-size: 1.4em;
+            color: #4b5563;
+            margin-bottom: 50px;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            color: white;
+            padding: 18px 45px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(37, 99, 235, 0.4);
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 100px 40px;
+            background: white;
+        }
+        
+        .features-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2.8em;
+            font-weight: 700;
+            margin-bottom: 60px;
+            color: #1a1a1a;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+        
+        .feature-card {
+            padding: 40px;
+            background: #f8fafc;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border-color: #2563eb;
+        }
+        
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            color: #1a1a1a;
+        }
+        
+        .feature-card p {
+            color: #6b7280;
+            line-height: 1.7;
+        }
+        
+        /* Stats Section */
+        .stats {
+            padding: 80px 40px;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            color: white;
+        }
+        
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            text-align: center;
+        }
+        
+        .stat-item h3 {
+            font-size: 3em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .stat-item p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        /* Footer */
+        footer {
+            background: #1a1a1a;
+            color: #9ca3af;
+            padding: 60px 40px 30px;
+        }
+        
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        
+        .footer-section h4 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        
+        .footer-section ul {
+            list-style: none;
+        }
+        
+        .footer-section ul li {
+            margin-bottom: 12px;
+        }
+        
+        .footer-section a {
+            color: #9ca3af;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-section a:hover {
+            color: #2563eb;
+        }
+        
+        .footer-bottom {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid #374151;
+            font-size: 0.9em;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5em;
+            }
+            
+            .hero p {
+                font-size: 1.1em;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .nav-actions {
+                gap: 10px;
+            }
+            
+            .nav-login,
+            .nav-cta {
+                padding: 8px 16px;
+                font-size: 0.85em;
+            }
+            
+            nav {
+                padding: 0 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                <div class="logo-icon">P</div>
+                <span>PulseControlERP</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#platform">Platform</a></li>
+                <li><a href="#solutions">Solutions</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="docs/PulseControlERP_Requirements.md">Documentation</a></li>
+                <li><a href="#about">About</a></li>
+            </ul>
+            <div class="nav-actions">
+                <a href="login.html" class="nav-login">Log In</a>
+                <a href="docs/Backend_Implementation_Guide.md" class="nav-cta">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>
+                Efficiency. Scalability.
+                <span class="gradient-text">Intelligence.</span>
+            </h1>
+            <p>Transform your garment manufacturing with PulseControlERP's multi-company platform powered by intelligent automation and real-time insights.</p>
+            <a href="#features" class="cta-button">Explore Platform</a>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="features-container">
+            <h2 class="section-title">Complete End-to-End Solution</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🏢</div>
+                    <h3>Multi-Company Management</h3>
+                    <p>Secure tenant isolation ensures complete data privacy between companies while maintaining centralized platform control.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Real-Time Analytics</h3>
+                    <p>Track every metric from order to shipment with comprehensive reporting and profit analysis tools.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>Full Workflow Automation</h3>
+                    <p>Streamline operations across 12 departments with automated approvals, notifications, and material tracking.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📦</div>
+                    <h3>Inventory Control</h3>
+                    <p>Real-time inventory management with requisition-based material flow and complete traceability.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">✂️</div>
+                    <h3>Production Tracking</h3>
+                    <p>Monitor cutting, sewing, washing, and finishing with barcode-enabled bundle tracking and DHU analysis.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🚚</div>
+                    <h3>Shipment Management</h3>
+                    <p>Complete shipment workflow from packing to inspection with detailed packing list generation.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="stats-container">
+            <div class="stat-item">
+                <h3>12</h3>
+                <p>Departments Covered</p>
+            </div>
+            <div class="stat-item">
+                <h3>100%</h3>
+                <p>Tenant Isolation</p>
+            </div>
+            <div class="stat-item">
+                <h3>50+</h3>
+                <p>API Endpoints</p>
+            </div>
+            <div class="stat-item">
+                <h3>24/7</h3>
+                <p>Real-Time Tracking</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-section">
+                <h4>Platform</h4>
+                <ul>
+                    <li><a href="docs/PulseControlERP_Requirements.md">Requirements</a></li>
+                    <li><a href="docs/PulseControlERP_Workflow.md">Workflows</a></li>
+                    <li><a href="docs/PulseControlERP_Security_Tenancy.md">Security</a></li>
+                    <li><a href="api/openapi.yaml">API Documentation</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h4>Implementation</h4>
+                <ul>
+                    <li><a href="docs/Backend_Implementation_Guide.md">Backend Guide</a></li>
+                    <li><a href="docs/Frontend_Module_Map.md">Frontend Guide</a></li>
+                    <li><a href="IMPLEMENTATION_CHECKLIST.md">Development Checklist</a></li>
+                    <li><a href="db/schema.sql">Database Schema</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h4>Visual Resources</h4>
+                <ul>
+                    <li><a href="diagrams/ERD.md">Database ERD</a></li>
+                    <li><a href="diagrams/Workflow.md">Workflow Diagrams</a></li>
+                    <li><a href="diagrams/Architecture.md">System Architecture</a></li>
+                    <li><a href="diagrams/README.md">Viewing Guide</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h4>Getting Started</h4>
+                <ul>
+                    <li><a href="README.md">Project Overview</a></li>
+                    <li><a href="HOW_TO_RUN.md">How to Run</a></li>
+                    <li><a href="docs/Backend_Implementation_Guide.md">Quick Start</a></li>
+                    <li><a href="IMPLEMENTATION_CHECKLIST.md">Checklist</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p><strong>PulseControlERP</strong> - Multi-Company Garment Manufacturing ERP Platform</p>
+            <p>Specification Package | Ready for Implementation | March 2026</p>
+        </div>
+    </footer>
+</body>
+</html>
