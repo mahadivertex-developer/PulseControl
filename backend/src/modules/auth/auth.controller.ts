@@ -74,6 +74,14 @@ export class AuthController {
     return this.authService.createUser(body, user.role, user.companyId);
   }
 
+  @Get('user-id-availability')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('admin', 'system_admin', 'company_admin')
+  @Permissions('users.read')
+  async userIdAvailability(@Query('userId') userId?: string) {
+    return this.authService.checkUserIdAvailability(userId);
+  }
+
   @Get('users')
   @UseGuards(JwtAuthGuard, TenantContextGuard, RolesGuard, PermissionsGuard)
   @Roles('admin', 'system_admin', 'company_admin', 'manager')

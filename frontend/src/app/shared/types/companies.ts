@@ -1,11 +1,13 @@
 export interface CreateCompanyPayload {
   code: string;
   name: string;
+  validityDate: string;
 }
 
 export interface UpdateCompanyPayload {
   code?: string;
   name?: string;
+  validityDate?: string;
 }
 
 export interface CompanySummary {
@@ -13,6 +15,7 @@ export interface CompanySummary {
   code: string;
   name: string;
   isActive: boolean;
+  validityDate?: string | null;
   createdAt: string;
 }
 

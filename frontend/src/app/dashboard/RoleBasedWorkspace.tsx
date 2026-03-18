@@ -14,9 +14,12 @@ import {
   Menu,
   MenuItem,
   Toolbar,
+  Tooltip,
   Typography,
   IconButton,
 } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import EventNoteIcon from '@mui/icons-material/EventNote';
@@ -46,12 +49,14 @@ import { CompanySortBy, CompanySortOrder, CompanySummary, CreateCompanyPayload, 
 import { CreateUserPayload, SortBy, SortOrder, UpdateUserPayload, UserSummary } from '../shared/types/users';
 import { useTheme } from '../shared/context/ThemeContext';
 
-const drawerWidth = 270;
+const DRAWER_OPEN_WIDTH = 270;
+const DRAWER_CLOSED_WIDTH = 64;
 
 interface RoleBasedWorkspaceProps {
   userEmail: string | null;
   role: string;
   currentUserCompanyId: number | null;
+  currentUserCompanyName: string | null;
   moduleAccess: string[];
   companies: CompanySummary[];
   companiesLoading: boolean;
@@ -120,28 +125,41 @@ function SectionPlaceholder({ title }: { title: string }) {
 export function RoleBasedWorkspace(props: RoleBasedWorkspaceProps) {
   const isSystemAdmin = props.role === 'admin' || props.role === 'system_admin';
   const isCompanyAdmin = props.role === 'company_admin';
+  const isManagement = props.role === 'manager';
   const { mode, setMode } = useTheme();
   const [themeAnchor, setThemeAnchor] = useState<null | HTMLElement>(null);
+  const [drawerOpen, setDrawerOpen] = useState(true);
+  const drawerWidth = drawerOpen ? DRAWER_OPEN_WIDTH : DRAWER_CLOSED_WIDTH;
 
   const defaultCompanySections = OPERATION_SECTIONS.map((section) => section.toString());
   const accessibleSections = useMemo(() => {
     if (isSystemAdmin) {
       return defaultCompanySections;
     }
+    if (isCompanyAdmin || isManagement) {
+      return defaultCompanySections;
+    }
     if (!props.moduleAccess || props.moduleAccess.length === 0) {
-      return isCompanyAdmin ? defaultCompanySections : [];
+      return [];
     }
     return props.moduleAccess;
-  }, [defaultCompanySections, isCompanyAdmin, isSystemAdmin, props.moduleAccess]);
+  }, [defaultCompanySections, isCompanyAdmin, isManagement, isSystemAdmin, props.moduleAccess]);
 
   const baseItems = isSystemAdmin
     ? ['System Admin', 'Company System Admin', ...defaultCompanySections]
-    : [isCompanyAdmin ? 'Company Admin' : 'Company Dashboard', ...accessibleSections];
+    : isCompanyAdmin
+    ? ['Company System Admin', ...accessibleSections]
+    : ['Company Dashboard', ...accessibleSections];
 
   const navItems = isCompanyAdmin ? [...baseItems, 'User Access'] : baseItems;
 
   const [selectedNav, setSelectedNav] = useState<string>(navItems[0]);
   const [adminTab, setAdminTab] = useState<'companies' | 'users'>('companies');
+
+  const showCompanyNameInHeader = !isSystemAdmin && Boolean(props.currentUserCompanyName);
+  const appHeaderTitle = showCompanyNameInHeader
+    ? `Bonon ERP | ${props.currentUserCompanyName}`
+    : 'Bonon ERP';
 
   const getNavIcon = (item: string) => {
     switch (item) {
@@ -310,11 +328,13 @@ export function RoleBasedWorkspace(props: RoleBasedWorkspaceProps) {
       );
     }
 
-    if (selectedNav === 'Company System Admin' && isSystemAdmin) {
+    if (selectedNav === 'Company System Admin') {
       return (
         <CompanySystemAdminPage
           companies={props.companies}
           currentUserCompanyId={props.currentUserCompanyId}
+          currentUserCompanyName={props.currentUserCompanyName}
+          currentUserRole={props.role}
           adminMessage={props.adminMessage}
           creating={props.usersLoading}
           onCreateUser={props.onCreateCompanySystemAdminUser}
@@ -337,16 +357,24 @@ export function RoleBasedWorkspace(props: RoleBasedWorkspaceProps) {
         color="default"
         elevation={0}
         sx={{
-          width: `calc(100% - ${drawerWidth}px)`,
-          ml: `${drawerWidth}px`,
+          width: '100%',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           borderBottom: '1px solid',
           borderColor: 'divider',
         }}
       >
         <Toolbar>
+          <IconButton
+            color="inherit"
+            onClick={() => setDrawerOpen((prev) => !prev)}
+            edge="start"
+            sx={{ mr: 1 }}
+          >
+            {drawerOpen ? <ChevronLeftIcon /> : <MenuIcon />}
+          </IconButton>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Pulse Visual ERP
+            {appHeaderTitle}
           </Typography>
           <IconButton
             color="inherit"
@@ -387,36 +415,32 @@ export function RoleBasedWorkspace(props: RoleBasedWorkspaceProps) {
           [`& .MuiDrawer-paper`]: {
             width: drawerWidth,
             boxSizing: 'border-box',
+            overflowX: 'hidden',
+            transition: 'width 0.2s ease',
             bgcolor: 'background.paper',
             borderRight: '1px solid',
             borderColor: 'divider',
           },
         }}
       >
-        <Toolbar>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Navigation
-          </Typography>
-        </Toolbar>
+        <Toolbar />
         <Divider />
         <List>
           {navItems.map((item) => (
-            <ListItemButton
-              key={item}
-              selected={selectedNav === item}
-              onClick={() => setSelectedNav(item)}
-              sx={{
-                '&.Mui-selected': {
-                  bgcolor: 'action.selected',
-                },
-                '&.Mui-selected:hover': {
-                  bgcolor: 'action.selected',
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 36 }}>{getNavIcon(item)}</ListItemIcon>
-              <ListItemText primary={item} />
-            </ListItemButton>
+            <Tooltip key={item} title={drawerOpen ? '' : item} placement="right">
+              <ListItemButton
+                selected={selectedNav === item}
+                onClick={() => setSelectedNav(item)}
+                sx={{
+                  px: 2,
+                  '&.Mui-selected': { bgcolor: 'action.selected' },
+                  '&.Mui-selected:hover': { bgcolor: 'action.selected' },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>{getNavIcon(item)}</ListItemIcon>
+                {drawerOpen && <ListItemText primary={item} />}
+              </ListItemButton>
+            </Tooltip>
           ))}
         </List>
       </Drawer>

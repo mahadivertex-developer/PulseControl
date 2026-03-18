@@ -30,7 +30,7 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
         >
           <Stack spacing={3}>
             <Typography variant="h3" sx={{ fontWeight: 700, color: 'text.primary' }}>
-              Pulse Visual ERP
+              Bonon ERP
             </Typography>
             <Typography variant="h6" sx={{ color: 'text.secondary' }}>
               Multi-company garment manufacturing platform for merchandising, store, cutting, sewing, washing,

@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MinLength } from 'class-validator';
+import { IsDateString, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class UpdateCompanyDto {
   @IsOptional()
@@ -10,4 +10,8 @@ export class UpdateCompanyDto {
   @IsString()
   @MinLength(2)
   name?: string;
+
+  @IsOptional()
+  @IsDateString()
+  validityDate?: string;
 }

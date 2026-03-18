@@ -11,6 +11,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   MenuItem,
   Stack,
   Table,
@@ -23,6 +24,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import {
   CompanySortBy,
   CompanySortOrder,
@@ -86,11 +88,13 @@ export function CompanyManagementPage(props: CompanyManagementPageProps) {
   const [createCompanyOpen, setCreateCompanyOpen] = useState(false);
   const [editCode, setEditCode] = useState('');
   const [editName, setEditName] = useState('');
+  const [editValidityDate, setEditValidityDate] = useState('');
 
   const openEditDialog = (company: CompanySummary) => {
     setEditingCompany(company);
     setEditCode(company.code);
     setEditName(company.name);
+    setEditValidityDate(company.validityDate || '');
   };
 
   const closeEditDialog = () => {
@@ -105,6 +109,7 @@ export function CompanyManagementPage(props: CompanyManagementPageProps) {
     onUpdateCompany(editingCompany.id, {
       code: editCode.trim(),
       name: editName.trim(),
+      validityDate: editValidityDate || undefined,
     });
     closeEditDialog();
   };
@@ -117,12 +122,7 @@ export function CompanyManagementPage(props: CompanyManagementPageProps) {
   return (
     <Stack spacing={3}>
       <Card sx={{ p: 3 }}>
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          sx={{ mb: 2 }}
-        >
+        <Stack spacing={1.5} sx={{ mb: 2 }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography variant="h6">Companies</Typography>
             <Button
@@ -134,8 +134,8 @@ export function CompanyManagementPage(props: CompanyManagementPageProps) {
               +
             </Button>
           </Stack>
-          <Box component="form" onSubmit={onSearchSubmit} sx={{ width: '100%' }}>
-            <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1}>
+          <Box component="form" onSubmit={onSearchSubmit}>
+            <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1} flexWrap="wrap">
               <TextField
                 label="Search"
                 placeholder="Code or name"
@@ -162,6 +162,7 @@ export function CompanyManagementPage(props: CompanyManagementPageProps) {
           </Box>
         </Stack>
 
+
         {companyMessage && (
           <Alert severity="info" sx={{ mb: 2 }}>
             {companyMessage}
@@ -180,6 +181,8 @@ export function CompanyManagementPage(props: CompanyManagementPageProps) {
                   <TableCell>ID</TableCell>
                   <TableCell>Code</TableCell>
                   <TableCell>Name</TableCell>
+                  <TableCell>Created Date</TableCell>
+                  <TableCell>Validity Date</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
@@ -190,6 +193,8 @@ export function CompanyManagementPage(props: CompanyManagementPageProps) {
                     <TableCell>{company.id}</TableCell>
                     <TableCell>{company.code}</TableCell>
                     <TableCell>{company.name}</TableCell>
+                    <TableCell>{new Date(company.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{company.validityDate ? new Date(company.validityDate).toLocaleDateString() : '-'}</TableCell>
                     <TableCell>
                       <Chip
                         label={company.isActive ? 'Active' : 'Inactive'}
@@ -234,11 +239,24 @@ export function CompanyManagementPage(props: CompanyManagementPageProps) {
       </Card>
 
       <Dialog open={Boolean(editingCompany)} onClose={closeEditDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit Company</DialogTitle>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 1 }}>
+          <DialogTitle>Edit Company</DialogTitle>
+          <IconButton onClick={closeEditDialog} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField label="Company Code" value={editCode} onChange={(e) => setEditCode(e.target.value)} fullWidth />
             <TextField label="Company Name" value={editName} onChange={(e) => setEditName(e.target.value)} fullWidth />
+            <TextField
+              label="Validity Date"
+              type="date"
+              value={editValidityDate}
+              onChange={(e) => setEditValidityDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -250,7 +268,12 @@ export function CompanyManagementPage(props: CompanyManagementPageProps) {
       </Dialog>
 
       <Dialog open={createCompanyOpen} onClose={() => setCreateCompanyOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create Company</DialogTitle>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 1 }}>
+          <DialogTitle>Create Company</DialogTitle>
+          <IconButton onClick={() => setCreateCompanyOpen(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
         <Box component="form" onSubmit={handleCreateCompanySubmit}>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
@@ -268,11 +291,20 @@ export function CompanyManagementPage(props: CompanyManagementPageProps) {
                 required
                 fullWidth
               />
+              <TextField
+                label="Validity Date"
+                type="date"
+                value={newCompany.validityDate}
+                onChange={(e) => onNewCompanyChange({ ...newCompany, validityDate: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                required
+                fullWidth
+              />
             </Stack>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setCreateCompanyOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={companiesLoading || !newCompany.code || !newCompany.name}>
+            <Button type="submit" variant="contained" disabled={companiesLoading || !newCompany.code || !newCompany.name || !newCompany.validityDate}>
               Create Company
             </Button>
           </DialogActions>

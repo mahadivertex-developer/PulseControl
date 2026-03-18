@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "./devcontainer.schema.json",
+  "title": "Local Dev Container Schema Fallback",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": { "type": "string" },
+    "dockerComposeFile": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      ]
+    },
+    "service": { "type": "string" },
+    "workspaceFolder": { "type": "string" },
+    "shutdownAction": { "type": "string" },
+    "runServices": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "forwardPorts": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "number" },
+          { "type": "string" }
+        ]
+      }
+    },
+    "portsAttributes": { "type": "object" },
+    "remoteEnv": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "postCreateCommand": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      ]
+    },
+    "customizations": { "type": "object" }
+  }
+}

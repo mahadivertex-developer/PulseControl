@@ -11,6 +11,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
+  InputAdornment,
   MenuItem,
   Stack,
   Table,
@@ -22,10 +24,17 @@ import {
   TableRow,
   TextField,
   Typography,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import CloseIcon from '@mui/icons-material/Close';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { OPERATION_SECTIONS } from '../../shared/constants/sections';
 import { CompanySummary } from '../../shared/types/companies';
 import { CreateUserPayload, SortBy, SortOrder, UpdateUserPayload, UserSummary } from '../../shared/types/users';
+import { apiClient } from '../../shared/services/api';
 
 interface UserManagementPageProps {
   companies: CompanySummary[];
@@ -124,6 +133,17 @@ export function UserManagementPage(props: UserManagementPageProps) {
   const [editCompanyId, setEditCompanyId] = useState<string>('');
   const [editModuleAccess, setEditModuleAccess] = useState<string[]>([]);
   const [editUserCategory, setEditUserCategory] = useState<'general' | 'qa'>('general');
+  const [userIdAvailability, setUserIdAvailability] = useState<'idle' | 'checking' | 'available' | 'unavailable'>('idle');
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
+  const [resetPasswordUser, setResetPasswordUser] = useState<UserSummary | null>(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
+
+  const hasFullSectionAccess = (role: string) => role === 'manager' || role === 'company_admin';
+  const allSections = useMemo(() => OPERATION_SECTIONS.map((section) => section.toString()), []);
+  const createRoleHasFullSectionAccess = hasFullSectionAccess(newUser.role || 'user');
+  const editRoleHasFullSectionAccess = hasFullSectionAccess(editRole);
 
   useEffect(() => {
     if (openCreateOnLoad) {
@@ -136,6 +156,24 @@ export function UserManagementPage(props: UserManagementPageProps) {
       onNewUserChange({ ...newUser, role: forcedCreateRole });
     }
   }, [forcedCreateRole, newUser, onNewUserChange]);
+
+  useEffect(() => {
+    if (!createRoleHasFullSectionAccess) {
+      return;
+    }
+
+    const current = newUser.moduleAccess ?? [];
+    const isSame = current.length === allSections.length && allSections.every((section) => current.includes(section));
+    if (isSame) {
+      return;
+    }
+
+    onNewUserChange({
+      ...newUser,
+      moduleAccess: [...allSections],
+    });
+    setCreateUserCategory('general');
+  }, [allSections, createRoleHasFullSectionAccess, newUser, onNewUserChange]);
 
   const applyCategoryToModules = (modules: string[] | undefined, category: 'general' | 'qa') => {
     const currentModules = [...(modules ?? [])];
@@ -150,10 +188,67 @@ export function UserManagementPage(props: UserManagementPageProps) {
 
   const openCreateDialog = () => {
     setCreateUserOpen(true);
+    setUserIdAvailability('idle');
+    setShowCreatePassword(false);
     if (forcedCreateRole && newUser.role !== forcedCreateRole) {
       onNewUserChange({ ...newUser, role: forcedCreateRole });
     }
   };
+
+  useEffect(() => {
+    if (!editingUser || !editRoleHasFullSectionAccess) {
+      return;
+    }
+
+    const isSame =
+      editModuleAccess.length === allSections.length && allSections.every((section) => editModuleAccess.includes(section));
+    if (isSame) {
+      return;
+    }
+
+    setEditModuleAccess([...allSections]);
+    setEditUserCategory('general');
+  }, [allSections, editModuleAccess, editRoleHasFullSectionAccess, editingUser]);
+
+  useEffect(() => {
+    if (!createUserOpen) {
+      return;
+    }
+
+    const normalizedUserId = (newUser.userId || '').trim().toUpperCase();
+    if (normalizedUserId.length < 3) {
+      setUserIdAvailability('idle');
+      return;
+    }
+
+    let active = true;
+    setUserIdAvailability('checking');
+
+    const timer = setTimeout(async () => {
+      try {
+        const response = await apiClient.get<{ available: boolean }>('/auth/user-id-availability', {
+          params: { userId: normalizedUserId },
+        });
+
+        if (!active) {
+          return;
+        }
+
+        setUserIdAvailability(response.data.available ? 'available' : 'unavailable');
+      } catch {
+        if (!active) {
+          return;
+        }
+
+        setUserIdAvailability('idle');
+      }
+    }, 350);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [createUserOpen, newUser.userId]);
 
   const onCreateCategoryChange = (category: 'general' | 'qa') => {
     setCreateUserCategory(category);
@@ -185,7 +280,7 @@ export function UserManagementPage(props: UserManagementPageProps) {
       email: editEmail.trim(),
       role: editRole,
       companyId: isSystemAdmin ? (editCompanyId ? Number(editCompanyId) : undefined) : undefined,
-      moduleAccess: applyCategoryToModules(editModuleAccess, editUserCategory),
+      moduleAccess: editRoleHasFullSectionAccess ? [...allSections] : applyCategoryToModules(editModuleAccess, editUserCategory),
     });
 
     closeEditDialog();
@@ -210,18 +305,28 @@ export function UserManagementPage(props: UserManagementPageProps) {
   };
 
   const handleResetPassword = (user: UserSummary) => {
-    const newPassword = window.prompt(`Set a new password for ${user.email} (minimum 6 characters):`);
-    if (newPassword === null) {
+    setResetPasswordUser(user);
+    setResetPasswordValue('');
+    setShowResetPassword(false);
+    setResetPasswordOpen(true);
+  };
+
+  const submitResetPassword = () => {
+    if (!resetPasswordUser) {
       return;
     }
 
-    const trimmedPassword = newPassword.trim();
+    const trimmedPassword = resetPasswordValue.trim();
     if (trimmedPassword.length < 6) {
       window.alert('Password must be at least 6 characters.');
       return;
     }
 
-    onResetUserPassword(user.id, trimmedPassword);
+    onResetUserPassword(resetPasswordUser.id, trimmedPassword);
+    setResetPasswordOpen(false);
+    setResetPasswordUser(null);
+    setResetPasswordValue('');
+    setShowResetPassword(false);
   };
 
   const handleCreateUserSubmit = (event: FormEvent) => {
@@ -242,17 +347,15 @@ export function UserManagementPage(props: UserManagementPageProps) {
   const getUserCategoryLabel = (moduleAccess?: string[]) =>
     (moduleAccess ?? []).includes('Quality Assurance') ? 'QA' : 'General';
 
+  const getUserCategoryDisplay = (role: string, moduleAccess?: string[]) =>
+    hasFullSectionAccess(role) ? 'N/A' : getUserCategoryLabel(moduleAccess);
+
   const getUserIdentifier = (user: UserSummary) => user.userId || user.email;
 
   return (
     <Stack spacing={3}>
       <Card sx={{ p: 3 }}>
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          sx={{ mb: 2 }}
-        >
+        <Stack spacing={1.5} sx={{ mb: 2 }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography variant="h6">{pageTitle}</Typography>
             <Button
@@ -264,8 +367,8 @@ export function UserManagementPage(props: UserManagementPageProps) {
               +
             </Button>
           </Stack>
-          <Box component="form" onSubmit={onSearchSubmit} sx={{ width: '100%' }}>
-            <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1}>
+          <Box component="form" onSubmit={onSearchSubmit}>
+            <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1} flexWrap="wrap">
               <TextField
                 label="Search"
                 placeholder="Email, role, company"
@@ -314,6 +417,7 @@ export function UserManagementPage(props: UserManagementPageProps) {
           </Box>
         </Stack>
 
+
         {adminMessage && (
           <Alert severity="info" sx={{ mb: 2 }}>
             {adminMessage}
@@ -355,8 +459,8 @@ export function UserManagementPage(props: UserManagementPageProps) {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={getUserCategoryLabel(user.moduleAccess)}
-                        color={getUserCategoryLabel(user.moduleAccess) === 'QA' ? 'info' : 'default'}
+                        label={getUserCategoryDisplay(user.role, user.moduleAccess)}
+                        color={getUserCategoryDisplay(user.role, user.moduleAccess) === 'QA' ? 'info' : 'default'}
                         size="small"
                       />
                     </TableCell>
@@ -415,7 +519,12 @@ export function UserManagementPage(props: UserManagementPageProps) {
       </Card>
 
       <Dialog open={Boolean(editingUser)} onClose={closeEditDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit User</DialogTitle>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 1 }}>
+          <DialogTitle>Edit User</DialogTitle>
+          <IconButton onClick={closeEditDialog} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField label="Email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} fullWidth />
@@ -426,16 +535,18 @@ export function UserManagementPage(props: UserManagementPageProps) {
                 </MenuItem>
               ))}
             </TextField>
-            <TextField
-              select
-              label="User Category"
-              value={editUserCategory}
-              onChange={(e) => setEditUserCategory(e.target.value as 'general' | 'qa')}
-              fullWidth
-            >
-              <MenuItem value="general">General</MenuItem>
-              <MenuItem value="qa">QA</MenuItem>
-            </TextField>
+            {!editRoleHasFullSectionAccess && (
+              <TextField
+                select
+                label="User Category"
+                value={editUserCategory}
+                onChange={(e) => setEditUserCategory(e.target.value as 'general' | 'qa')}
+                fullWidth
+              >
+                <MenuItem value="general">General</MenuItem>
+                <MenuItem value="qa">QA</MenuItem>
+              </TextField>
+            )}
             {isSystemAdmin && (
               <TextField
                 select
@@ -455,19 +566,48 @@ export function UserManagementPage(props: UserManagementPageProps) {
             <TextField
               select
               label="Section Access"
-              value={editModuleAccess}
+              value={editRoleHasFullSectionAccess ? allSections : editModuleAccess}
               onChange={(e) => {
                 const value = e.target.value;
                 setEditModuleAccess(typeof value === 'string' ? value.split(',') : value);
               }}
-              SelectProps={{ multiple: true }}
+              SelectProps={{
+                multiple: true,
+                renderValue: (selected) => (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                    {(selected as string[]).map((section) => (
+                      <Chip key={section} label={section} size="small" />
+                    ))}
+                  </Box>
+                ),
+              }}
               fullWidth
+              disabled={editRoleHasFullSectionAccess}
             >
-              {OPERATION_SECTIONS.map((section) => (
-                <MenuItem key={section} value={section}>
-                  {section}
-                </MenuItem>
-              ))}
+              {OPERATION_SECTIONS.map((section) => {
+                const selected = editModuleAccess.includes(section);
+                return (
+                  <MenuItem
+                    key={section}
+                    value={section}
+                    sx={{
+                      borderRadius: 1,
+                      mb: 0.5,
+                      bgcolor: selected ? 'success.light' : undefined,
+                      '&:hover': {
+                        bgcolor: selected ? 'success.light' : undefined,
+                      },
+                    }}
+                  >
+                    <ListItemText primary={section} />
+                    {selected && (
+                      <ListItemIcon sx={{ minWidth: 28, justifyContent: 'center', color: 'success.main' }}>
+                        <CheckCircleRoundedIcon fontSize="small" />
+                      </ListItemIcon>
+                    )}
+                  </MenuItem>
+                );
+              })}
             </TextField>
           </Stack>
         </DialogContent>
@@ -480,10 +620,35 @@ export function UserManagementPage(props: UserManagementPageProps) {
       </Dialog>
 
       <Dialog open={createUserOpen} onClose={() => setCreateUserOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{forcedCreateRole === 'company_admin' ? 'Create Company Admin' : 'Create User'}</DialogTitle>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 1 }}>
+          <DialogTitle>{forcedCreateRole === 'company_admin' ? 'Create Company Admin' : 'Create User'}</DialogTitle>
+          <IconButton onClick={() => setCreateUserOpen(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
         <Box component="form" onSubmit={handleCreateUserSubmit}>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
+              <TextField
+                label="User ID"
+                value={newUser.userId || ''}
+                onChange={(e) => onNewUserChange({ ...newUser, userId: e.target.value.toUpperCase() })}
+                required
+                fullWidth
+                error={userIdAvailability === 'unavailable'}
+                helperText={
+                  userIdAvailability === 'checking'
+                    ? 'Checking availability...'
+                    : userIdAvailability === 'available'
+                      ? 'Available'
+                      : userIdAvailability === 'unavailable'
+                        ? 'Not available'
+                        : ' '
+                }
+                InputProps={{
+                  endAdornment: userIdAvailability === 'checking' ? <CircularProgress size={18} /> : undefined,
+                }}
+              />
               <TextField
                 label="Email"
                 type="email"
@@ -494,11 +659,24 @@ export function UserManagementPage(props: UserManagementPageProps) {
               />
               <TextField
                 label="Password"
-                type="password"
+                type={showCreatePassword ? 'text' : 'password'}
                 value={newUser.password}
                 onChange={(e) => onNewUserChange({ ...newUser, password: e.target.value })}
                 required
                 fullWidth
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label={showCreatePassword ? 'Hide password' : 'Show password'}
+                        onClick={() => setShowCreatePassword((prev) => !prev)}
+                        edge="end"
+                      >
+                        {showCreatePassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
               <TextField
                 label="Role"
@@ -516,16 +694,18 @@ export function UserManagementPage(props: UserManagementPageProps) {
                     </MenuItem>
                   ))}
               </TextField>
-              <TextField
-                select
-                label="User Category"
-                value={createUserCategory}
-                onChange={(e) => onCreateCategoryChange(e.target.value as 'general' | 'qa')}
-                fullWidth
-              >
-                <MenuItem value="general">General</MenuItem>
-                <MenuItem value="qa">QA</MenuItem>
-              </TextField>
+              {!createRoleHasFullSectionAccess && (
+                <TextField
+                  select
+                  label="User Category"
+                  value={createUserCategory}
+                  onChange={(e) => onCreateCategoryChange(e.target.value as 'general' | 'qa')}
+                  fullWidth
+                >
+                  <MenuItem value="general">General</MenuItem>
+                  <MenuItem value="qa">QA</MenuItem>
+                </TextField>
+              )}
               {isSystemAdmin && (
                 <TextField
                   select
@@ -551,7 +731,7 @@ export function UserManagementPage(props: UserManagementPageProps) {
               <TextField
                 select
                 label="Section Access"
-                value={newUser.moduleAccess ?? []}
+                value={createRoleHasFullSectionAccess ? allSections : newUser.moduleAccess ?? []}
                 onChange={(e) => {
                   const value = e.target.value;
                   onNewUserChange({
@@ -559,24 +739,106 @@ export function UserManagementPage(props: UserManagementPageProps) {
                     moduleAccess: typeof value === 'string' ? value.split(',') : value,
                   });
                 }}
-                SelectProps={{ multiple: true }}
+                SelectProps={{
+                  multiple: true,
+                  renderValue: (selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                      {(selected as string[]).map((section) => (
+                        <Chip key={section} label={section} size="small" />
+                      ))}
+                    </Box>
+                  ),
+                }}
                 fullWidth
+                disabled={createRoleHasFullSectionAccess}
               >
-                {OPERATION_SECTIONS.map((section) => (
-                  <MenuItem key={section} value={section}>
-                    {section}
-                  </MenuItem>
-                ))}
+                {OPERATION_SECTIONS.map((section) => {
+                  const selected = (newUser.moduleAccess ?? []).includes(section);
+                  return (
+                    <MenuItem
+                      key={section}
+                      value={section}
+                      sx={{
+                        borderRadius: 1,
+                        mb: 0.5,
+                        bgcolor: selected ? 'success.light' : undefined,
+                        '&:hover': {
+                          bgcolor: selected ? 'success.light' : undefined,
+                        },
+                      }}
+                    >
+                      <ListItemText primary={section} />
+                      {selected && (
+                        <ListItemIcon sx={{ minWidth: 28, justifyContent: 'center', color: 'success.main' }}>
+                          <CheckCircleRoundedIcon fontSize="small" />
+                        </ListItemIcon>
+                      )}
+                    </MenuItem>
+                  );
+                })}
               </TextField>
             </Stack>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setCreateUserOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={usersLoading || !newUser.email || !newUser.password}>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={
+                usersLoading ||
+                !newUser.userId ||
+                !newUser.email ||
+                !newUser.password ||
+                userIdAvailability === 'checking' ||
+                userIdAvailability === 'unavailable'
+              }
+            >
               {forcedCreateRole === 'company_admin' ? 'Create Company Admin' : 'Create User'}
             </Button>
           </DialogActions>
         </Box>
+      </Dialog>
+
+      <Dialog open={resetPasswordOpen} onClose={() => setResetPasswordOpen(false)} maxWidth="sm" fullWidth>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 1 }}>
+          <DialogTitle>Reset Password</DialogTitle>
+          <IconButton onClick={() => setResetPasswordOpen(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Set a new password for {resetPasswordUser?.email ?? 'user'}.
+            </Typography>
+            <TextField
+              label="New Password"
+              type={showResetPassword ? 'text' : 'password'}
+              value={resetPasswordValue}
+              onChange={(e) => setResetPasswordValue(e.target.value)}
+              fullWidth
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={showResetPassword ? 'Hide password' : 'Show password'}
+                      onClick={() => setShowResetPassword((prev) => !prev)}
+                      edge="end"
+                    >
+                      {showResetPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetPasswordOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={submitResetPassword} disabled={resetPasswordValue.trim().length < 6}>
+            Save
+          </Button>
+        </DialogActions>
       </Dialog>
     </Stack>
   );

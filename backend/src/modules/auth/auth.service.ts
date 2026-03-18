@@ -97,6 +97,24 @@ export class AuthService implements OnModuleInit {
     };
   }
 
+  async checkUserIdAvailability(userId?: string) {
+    const normalizedUserId = userId?.trim().toUpperCase();
+
+    if (!normalizedUserId || normalizedUserId.length < 3) {
+      throw new BadRequestException('User ID must be at least 3 characters');
+    }
+
+    const existingByUserId = await this.usersRepository.findOne({
+      where: { userId: normalizedUserId },
+      select: { id: true },
+    });
+
+    return {
+      userId: normalizedUserId,
+      available: !existingByUserId,
+    };
+  }
+
   private async generateUserId(companyCode?: string | null): Promise<string> {
     const prefix = (companyCode || 'USR').replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 6) || 'USR';
 

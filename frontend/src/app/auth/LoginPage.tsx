@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import {
   Alert,
@@ -6,9 +7,13 @@ import {
   Card,
   CircularProgress,
   Container,
+  IconButton,
+  InputAdornment,
   TextField,
   Typography,
 } from '@mui/material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { LoginCredentials } from '../shared/types/auth';
 
 interface LoginPageProps {
@@ -21,6 +26,8 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ credentials, loading, error, onChange, onSubmit, onBack }: LoginPageProps) {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <Box
       sx={{
@@ -35,7 +42,7 @@ export function LoginPage({ credentials, loading, error, onChange, onSubmit, onB
         <Card elevation={10} sx={{ p: 4 }}>
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <Typography variant="h4" component="h1" gutterBottom sx={{ color: '#667eea', fontWeight: 'bold' }}>
-              PulseControlERP
+              Bonon ERP
             </Typography>
             <Typography variant="body2" color="textSecondary">
               Multi-Company Garment Manufacturing ERP
@@ -58,12 +65,25 @@ export function LoginPage({ credentials, loading, error, onChange, onSubmit, onB
             <TextField
               label="Password"
               name="password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={credentials.password}
               onChange={onChange}
               required
               fullWidth
               disabled={loading}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
             <Button
               type="submit"

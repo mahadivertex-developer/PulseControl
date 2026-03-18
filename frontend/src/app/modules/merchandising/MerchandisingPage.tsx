@@ -11,6 +11,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   Link,
   MenuItem,
   Paper,
@@ -26,6 +27,7 @@ import {
 } from '@mui/material';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import CloseIcon from '@mui/icons-material/Close';
 import { apiClient } from '../../shared/services/api';
 
 type OrderInfo = {
@@ -683,9 +685,14 @@ export function MerchandisingPage() {
       </Paper>
 
       <Dialog open={orderDetailsOpen} onClose={() => setOrderDetailsOpen(false)} fullWidth maxWidth="lg">
-        <DialogTitle sx={{ fontWeight: 700 }}>
-          Order Details {selectedOrderId ? `#${selectedOrderId}` : ''}
-        </DialogTitle>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 1 }}>
+          <DialogTitle sx={{ fontWeight: 700 }}>
+            Order Details {selectedOrderId ? `#${selectedOrderId}` : ''}
+          </DialogTitle>
+          <IconButton onClick={() => setOrderDetailsOpen(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
         <DialogContent dividers>
           {orderDetailsLoading && (
             <Box sx={{ py: 5, display: 'flex', justifyContent: 'center' }}>
@@ -830,7 +837,12 @@ export function MerchandisingPage() {
         open={openCreateOrder}
         onClose={() => setOpenCreateOrder(false)}
       >
-        <DialogTitle sx={{ fontWeight: 700 }}>Create Purchase Order</DialogTitle>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 1 }}>
+          <DialogTitle sx={{ fontWeight: 700 }}>Create Purchase Order</DialogTitle>
+          <IconButton onClick={() => setOpenCreateOrder(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
         <DialogContent dividers sx={{ pb: 0 }}>
           {submitError && (
             <Alert severity="error" sx={{ mb: 2 }}>

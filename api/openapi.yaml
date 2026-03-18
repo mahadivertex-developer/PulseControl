@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
-  title: PulseControlERP API
+  title: Bonon ERP API
   description: Multi-tenant ERP system for garment manufacturing and supply chain management
   version: 1.0.0
   contact:
-    name: PulseControlERP Support
+    name: Bonon ERP Support
 
 servers:
   - url: https://api.pulsecontroleRP.com/v1

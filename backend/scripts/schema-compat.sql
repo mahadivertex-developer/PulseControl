@@ -19,3 +19,4 @@ SET username = COALESCE(username, email),
 
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS "isActive" boolean NOT NULL DEFAULT true;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS updated_at timestamp NOT NULL DEFAULT now();
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS validity_date date;

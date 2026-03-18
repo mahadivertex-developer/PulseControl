@@ -12,7 +12,7 @@ export const config = {
   apiTimeout: 30000,
   
   // App info
-  appName: 'PulseControlERP',
+  appName: 'Bonon ERP',
   appVersion: '1.0.0',
   
   // Development mode

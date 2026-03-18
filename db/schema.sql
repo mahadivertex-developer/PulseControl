@@ -9,6 +9,7 @@ CREATE TABLE companies (
 	code VARCHAR(50) NOT NULL UNIQUE,
 	name VARCHAR(200) NOT NULL,
 	is_active BOOLEAN NOT NULL DEFAULT TRUE,
+	validity_date DATE,
 	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -62,6 +63,14 @@ CREATE TABLE production_lines (
 	unit_id BIGINT NOT NULL REFERENCES units(id),
 	code VARCHAR(50) NOT NULL,
 	name VARCHAR(100) NOT NULL,
+	UNIQUE (company_id, code)
+);
+
+CREATE TABLE buyers (
+	id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	company_id BIGINT NOT NULL REFERENCES companies(id),
+	code VARCHAR(50) NOT NULL,
+	name VARCHAR(150) NOT NULL,
 	UNIQUE (company_id, code)
 );
 

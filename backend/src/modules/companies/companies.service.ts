@@ -10,7 +10,7 @@ export class CompaniesService {
     @InjectRepository(Company) private readonly companiesRepository: Repository<Company>,
   ) {}
 
-  async createCompany(code: string, name: string) {
+  async createCompany(code: string, name: string, validityDate: string) {
     const normalizedCode = code.trim().toUpperCase();
     const normalizedName = name.trim();
 
@@ -23,6 +23,7 @@ export class CompaniesService {
       code: normalizedCode,
       name: normalizedName,
       isActive: true,
+      validityDate,
     });
 
     const savedCompany = await this.companiesRepository.save(company);
@@ -31,6 +32,7 @@ export class CompaniesService {
       code: savedCompany.code,
       name: savedCompany.name,
       isActive: savedCompany.isActive,
+      validityDate: savedCompany.validityDate,
       createdAt: savedCompany.createdAt,
       updatedAt: savedCompany.updatedAt,
     };
@@ -89,6 +91,7 @@ export class CompaniesService {
         code: company.code,
         name: company.name,
         isActive: company.isActive,
+        validityDate: company.validityDate,
         createdAt: company.createdAt,
         updatedAt: company.updatedAt,
       })),
@@ -113,12 +116,13 @@ export class CompaniesService {
       code: savedCompany.code,
       name: savedCompany.name,
       isActive: savedCompany.isActive,
+      validityDate: savedCompany.validityDate,
       createdAt: savedCompany.createdAt,
       updatedAt: savedCompany.updatedAt,
     };
   }
 
-  async updateCompany(id: number, payload: { code?: string; name?: string }) {
+  async updateCompany(id: number, payload: { code?: string; name?: string; validityDate?: string }) {
     const company = await this.companiesRepository.findOne({ where: { id } });
     if (!company) {
       throw new NotFoundException('Company not found');
@@ -137,12 +141,17 @@ export class CompaniesService {
       company.name = payload.name.trim();
     }
 
+    if (payload.validityDate !== undefined) {
+      company.validityDate = payload.validityDate;
+    }
+
     const savedCompany = await this.companiesRepository.save(company);
     return {
       id: savedCompany.id,
       code: savedCompany.code,
       name: savedCompany.name,
       isActive: savedCompany.isActive,
+      validityDate: savedCompany.validityDate,
       createdAt: savedCompany.createdAt,
       updatedAt: savedCompany.updatedAt,
     };

@@ -1,5 +1,5 @@
 import type { ChangeEvent, FormEvent } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../shared/services/api';
 import { authStorage } from '../shared/services/authStorage';
 import { LoginPage } from '../auth/LoginPage';
@@ -22,12 +22,14 @@ import {
   CreateCompanyPayload,
   UpdateCompanyPayload,
 } from '../shared/types/companies';
+import { OPERATION_SECTIONS } from '../shared/constants/sections';
 
 export function AppShell() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [currentRole, setCurrentRole] = useState<string>('user');
   const [currentCompanyId, setCurrentCompanyId] = useState<number | null>(null);
+  const [currentCompanyName, setCurrentCompanyName] = useState<string | null>(authStorage.getUserCompanyName());
   const [currentModuleAccess, setCurrentModuleAccess] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -63,7 +65,28 @@ export function AppShell() {
   const [newCompany, setNewCompany] = useState<CreateCompanyPayload>({
     code: '',
     name: '',
+    validityDate: '',
   });
+
+  const currentCompanyNameFromData = useMemo(() => {
+    if (currentCompanyId === null) {
+      return null;
+    }
+    const fromCompanies = companies.find((company) => company.id === currentCompanyId)?.name;
+    if (fromCompanies) {
+      return fromCompanies;
+    }
+    const fromUsers = users.find((user) => user.companyId === currentCompanyId)?.companyName;
+    return fromUsers ?? null;
+  }, [companies, currentCompanyId, users]);
+
+  useEffect(() => {
+    if (!currentCompanyNameFromData) {
+      return;
+    }
+    setCurrentCompanyName(currentCompanyNameFromData);
+    authStorage.setUserCompanyName(currentCompanyNameFromData);
+  }, [currentCompanyNameFromData]);
 
   useEffect(() => {
     const bootstrapSession = async () => {
@@ -78,6 +101,7 @@ export function AppShell() {
         authStorage.setUserRole(response.data.role);
         authStorage.setUserCompanyId(response.data.companyId);
         authStorage.setUserModuleAccess(response.data.moduleAccess || []);
+        setCurrentCompanyName(authStorage.getUserCompanyName());
         setCurrentRole(response.data.role);
         setCurrentCompanyId(response.data.companyId);
         setCurrentModuleAccess(response.data.moduleAccess || []);
@@ -159,9 +183,11 @@ export function AppShell() {
       authStorage.setUserEmail(response.data.user.email);
       authStorage.setUserRole(response.data.user.role);
       authStorage.setUserCompanyId(response.data.user.companyId);
+      authStorage.setUserCompanyName(response.data.user.companyName);
       authStorage.setUserModuleAccess(response.data.user.moduleAccess || []);
       setCurrentRole(response.data.user.role);
       setCurrentCompanyId(response.data.user.companyId);
+      setCurrentCompanyName(response.data.user.companyName);
       setCurrentModuleAccess(response.data.user.moduleAccess || []);
       setIsLoggedIn(true);
       setCredentials({ email: '', password: '' });
@@ -180,7 +206,15 @@ export function AppShell() {
     setAdminMessage(null);
 
     try {
-      await apiClient.post('/auth/register', newUser);
+      const role = (newUser.role || '').toLowerCase();
+      const requiresFullSectionAccess = role === 'manager' || role === 'company_admin';
+      const payload = {
+        ...newUser,
+        moduleAccess: requiresFullSectionAccess ? [...OPERATION_SECTIONS] : newUser.moduleAccess,
+        userCategory: requiresFullSectionAccess ? undefined : newUser.userCategory,
+      };
+
+      await apiClient.post('/auth/register', payload);
       setNewUser({ email: '', password: '', role: 'user', companyId: currentCompanyId ?? undefined, moduleAccess: [] });
       setAdminMessage('User created successfully.');
       await fetchUsers();
@@ -195,7 +229,13 @@ export function AppShell() {
     setUsersLoading(true);
     setAdminMessage(null);
     try {
-      await apiClient.post('/auth/register', payload);
+      const role = (payload.role || '').toLowerCase();
+      const requiresFullSectionAccess = role === 'manager' || role === 'company_admin';
+      await apiClient.post('/auth/register', {
+        ...payload,
+        moduleAccess: requiresFullSectionAccess ? [...OPERATION_SECTIONS] : payload.moduleAccess,
+        userCategory: requiresFullSectionAccess ? undefined : payload.userCategory,
+      });
       setAdminMessage('User created successfully.');
       await fetchUsers();
     } catch (err: any) {
@@ -259,7 +299,7 @@ export function AppShell() {
 
     try {
       await apiClient.post('/companies', newCompany);
-      setNewCompany({ code: '', name: '' });
+      setNewCompany({ code: '', name: '', validityDate: '' });
       setCompanyMessage('Company created successfully.');
       await fetchCompanies();
     } catch (err: any) {
@@ -306,6 +346,7 @@ export function AppShell() {
     setIsLoggedIn(false);
     setCurrentRole('user');
     setCurrentCompanyId(null);
+    setCurrentCompanyName(null);
     setCurrentModuleAccess([]);
     setShowLogin(false);
     setUsers([]);
@@ -429,6 +470,7 @@ export function AppShell() {
       sortBy={sortBy}
       sortOrder={sortOrder}
       currentUserCompanyId={currentCompanyId}
+      currentUserCompanyName={currentCompanyName}
       companies={companies}
       companiesLoading={companiesLoading}
       companyMessage={companyMessage}

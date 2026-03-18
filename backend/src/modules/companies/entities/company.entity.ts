@@ -22,6 +22,9 @@ export class Company {
   @Column({ default: true })
   isActive!: boolean;
 
+  @Column({ name: 'validity_date', type: 'date', nullable: true })
+  validityDate!: string | null;
+
   @OneToMany(() => User, (user) => user.company)
   users!: User[];
 

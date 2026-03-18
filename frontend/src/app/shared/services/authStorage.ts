@@ -2,6 +2,7 @@ const AUTH_TOKEN_KEY = 'authToken';
 const USER_EMAIL_KEY = 'userEmail';
 const USER_ROLE_KEY = 'userRole';
 const USER_COMPANY_ID_KEY = 'userCompanyId';
+const USER_COMPANY_NAME_KEY = 'userCompanyName';
 const USER_MODULE_ACCESS_KEY = 'userModuleAccess';
 
 export const authStorage = {
@@ -50,6 +51,23 @@ export const authStorage = {
   clearUserCompanyId(): void {
     localStorage.removeItem(USER_COMPANY_ID_KEY);
   },
+  getUserCompanyName(): string | null {
+    const value = localStorage.getItem(USER_COMPANY_NAME_KEY);
+    if (!value) {
+      return null;
+    }
+    return value;
+  },
+  setUserCompanyName(companyName: string | null): void {
+    if (!companyName) {
+      localStorage.setItem(USER_COMPANY_NAME_KEY, '');
+      return;
+    }
+    localStorage.setItem(USER_COMPANY_NAME_KEY, companyName);
+  },
+  clearUserCompanyName(): void {
+    localStorage.removeItem(USER_COMPANY_NAME_KEY);
+  },
   getUserModuleAccess(): string[] {
     const raw = localStorage.getItem(USER_MODULE_ACCESS_KEY);
     if (!raw) {
@@ -73,6 +91,7 @@ export const authStorage = {
     this.clearUserEmail();
     this.clearUserRole();
     this.clearUserCompanyId();
+    this.clearUserCompanyName();
     this.clearUserModuleAccess();
   },
 };

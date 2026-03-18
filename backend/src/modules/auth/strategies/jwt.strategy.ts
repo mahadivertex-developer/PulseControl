@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { getPermissionsForRole } from '../permissions/role-permissions';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -18,12 +19,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Invalid token payload');
     }
 
+    const normalizedRole = payload.role.toLowerCase();
+
     return {
       sub: payload.sub,
       email: payload.email,
-      role: payload.role.toLowerCase(),
+      role: normalizedRole,
       companyId: payload.companyId ?? null,
-      permissions: payload.permissions ?? [],
+      permissions: getPermissionsForRole(normalizedRole),
       moduleAccess: payload.moduleAccess ?? [],
     };
   }

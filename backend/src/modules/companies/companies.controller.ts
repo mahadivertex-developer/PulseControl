@@ -1,7 +1,8 @@
-import {
+﻿import {
   Body,
   Controller,
   DefaultValuePipe,
+  ForbiddenException,
   Get,
   Param,
   ParseIntPipe,
@@ -31,7 +32,7 @@ export class CompaniesController {
   @Roles('admin', 'system_admin')
   @Permissions('companies.write')
   async createCompany(@Body() body: CreateCompanyDto) {
-    return this.companiesService.createCompany(body.code, body.name);
+    return this.companiesService.createCompany(body.code, body.name, body.validityDate);
   }
 
   @Get()
@@ -79,5 +80,16 @@ export class CompaniesController {
   @Permissions('companies.write')
   async updateCompany(@Param('id', ParseIntPipe) id: number, @Body() body: UpdateCompanyDto) {
     return this.companiesService.updateCompany(id, body);
+  }
+
+  @Patch('my')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('admin', 'system_admin', 'company_admin')
+  @Permissions('company-data.write')
+  async updateMyCompany(@CurrentUser() user: AuthenticatedUser, @Body() body: UpdateCompanyDto) {
+    if (!user.companyId) {
+      throw new ForbiddenException('No company associated with this account');
+    }
+    return this.companiesService.updateCompany(user.companyId, body);
   }
 }
