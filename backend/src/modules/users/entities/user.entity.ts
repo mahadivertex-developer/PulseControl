@@ -14,25 +14,25 @@ export class User {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ type: 'varchar', unique: true })
+  @Column({ unique: true })
   email!: string;
 
-  @Column({ type: 'varchar', name: 'username', nullable: true, unique: true })
+  @Column({ name: 'username', type: 'varchar', nullable: true, unique: true })
   userId!: string | null;
 
-  @Column({ type: 'varchar', name: 'full_name', nullable: true })
+  @Column({ name: 'full_name', type: 'varchar', nullable: true })
   fullName!: string | null;
 
-  @Column({ type: 'varchar', name: 'phone_number', nullable: true })
+  @Column({ name: 'phone_number', type: 'varchar', nullable: true })
   phoneNumber!: string | null;
 
-  @Column({ type: 'varchar', name: 'user_category', nullable: true, default: 'general' })
+  @Column({ name: 'user_category', type: 'varchar', nullable: true, default: 'general' })
   userCategory!: string | null;
 
-  @Column({ type: 'varchar', name: 'general_category', nullable: true })
+  @Column({ name: 'general_category', type: 'varchar', nullable: true })
   generalCategory!: string | null;
 
-  @Column({ type: 'varchar', name: 'user_type', nullable: true, default: 'executive' })
+  @Column({ name: 'user_type', type: 'varchar', nullable: true, default: 'executive' })
   userType!: string | null;
 
   @Column({ name: 'password_hash' })

@@ -33,10 +33,23 @@ async function bootstrap() {
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+  const githubDevOriginPattern = /^https:\/\/[a-z0-9-]+-\d+\.app\.github\.dev$/i;
   
   // Enable CORS
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (allowedOrigins.includes(origin) || githubDevOriginPattern.test(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origin ${origin} not allowed by CORS`), false);
+    },
     credentials: true,
   });
   

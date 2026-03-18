@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './modules/auth/auth.module';
 import { CompaniesModule } from './modules/companies/companies.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { RootController } from './root.controller';
 import { UsersModule } from './modules/users/users.module';
 import { UnitsModule } from './modules/units/units.module';
 import { LinesModule } from './modules/lines/lines.module';
@@ -38,6 +39,7 @@ if (!dbPassword || dbPassword === 'password') {
 }
 
 @Module({
+  controllers: [RootController],
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',

@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import {
   Alert,
   Box,
@@ -12,8 +11,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { LoginCredentials } from '../shared/types/auth';
 
 interface LoginPageProps {
@@ -42,7 +41,7 @@ export function LoginPage({ credentials, loading, error, onChange, onSubmit, onB
         <Card elevation={10} sx={{ p: 4 }}>
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <Typography variant="h4" component="h1" gutterBottom sx={{ color: '#667eea', fontWeight: 'bold' }}>
-              Bonon ERP
+              PulseControlERP
             </Typography>
             <Typography variant="body2" color="textSecondary">
               Multi-Company Garment Manufacturing ERP
@@ -71,18 +70,21 @@ export function LoginPage({ credentials, loading, error, onChange, onSubmit, onB
               required
               fullWidth
               disabled={loading}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        edge="end"
+                        disabled={loading}
+                      >
+                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
               }}
             />
             <Button

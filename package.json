@@ -1,5 +1,14 @@
 {
   "dependencies": {
     "react-scripts": "^5.0.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm --prefix backend run start:dev\" \"npm --prefix frontend start\"",
+    "dev:backend": "npm --prefix backend run start:dev",
+    "dev:frontend": "npm --prefix frontend start",
+    "check": "node check-health.js"
   }
 }
